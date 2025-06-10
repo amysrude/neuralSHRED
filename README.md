@@ -2,7 +2,7 @@
 
 This directory contains the implementation of the experiments presented in *Shallow Recurrent Decoders for Neural and　Behavioral Dynamics*
 
-[Diagram of SHRED architecture](shred_diagram.png)
+![Diagram of SHRED architecture](shred_diagram.png)
 
 A *Shallow Recurrent Decoder* (SHRED) is composed of a *gated-recurrent unit* (GRU) that processes teporal dependency of sensor data and a *shallow decoder network* (SDN) that projects to the full state space. 
 
