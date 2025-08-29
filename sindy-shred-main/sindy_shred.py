@@ -24,7 +24,7 @@ class E_SINDy(torch.nn.Module):
         library_Thetas = library_Thetas.reshape(num_data, num_replicates, self.library_dim)
         h_replicates = h_replicates.reshape(num_data, num_replicates, latent_dim)
         h_replicates = h_replicates + torch.einsum('ijk,jkl->ijl', library_Thetas, (self.coefficients * self.coefficient_mask)) * dt
-        return h_replicates
+        return h_replicates, self.coefficients
     
     def thresholding(self, threshold, base_threshold=0):
         threshold_tensor = torch.full_like(self.coefficients, threshold)
@@ -42,7 +42,7 @@ class E_SINDy(torch.nn.Module):
         self.coefficient_mask = torch.ones(self.num_replicates, self.library_dim, self.latent_dim, requires_grad=False).to(self.device)
 
 class SINDy_SHRED(torch.nn.Module):
-    def __init__(self, input_size, output_size, hidden_size=64, hidden_layers=1, l1=350, l2=400, dropout=0.0, library_dim=10, poly_order=3, include_sine=False, dt=0.03, layer_norm=False, device='cpu'):
+    def __init__(self, input_size, output_size, hidden_size=64, hidden_layers=1, l1=350, l2=400, dropout=0.0, library_dim=10, poly_order=3, include_sine=False, dt=0.03, layer_norm=False, device='cpu', sindy = True):
         super(SINDy_SHRED, self).__init__()
         self.gru = torch.nn.GRU(input_size=input_size, hidden_size=hidden_size,
                                         num_layers=hidden_layers, batch_first=True).to(device)
@@ -60,6 +60,7 @@ class SINDy_SHRED(torch.nn.Module):
         self.dt = dt
         self.use_layer_norm = layer_norm
         self.layer_norm_gru = torch.nn.LayerNorm(hidden_size)
+        self.sindy = sindy
 
     def forward(self, x, sindy=False):
         h_0 = torch.zeros((self.hidden_layers, x.size(0), self.hidden_size), dtype=torch.float)
@@ -85,9 +86,9 @@ class SINDy_SHRED(torch.nn.Module):
                 h_t = h_out[:-1, :]
                 ht_replicates = h_t.unsqueeze(1).repeat(1, self.num_replicates, 1)
                 for _ in range(10):
-                    ht_replicates = self.e_sindy(ht_replicates, dt=self.dt)
+                    ht_replicates, coefficients = self.e_sindy(ht_replicates, dt=self.dt)
                 h_out_replicates = h_out[1:, :].unsqueeze(1).repeat(1, self.num_replicates, 1)
-                output = output, h_out_replicates, ht_replicates
+                output = output, h_out_replicates, ht_replicates, coefficients
         return output
     
     def gru_outputs(self, x, sindy=False):
@@ -103,7 +104,7 @@ class SINDy_SHRED(torch.nn.Module):
             h_t = h_out[:-1, :]
             ht_replicates = h_t.unsqueeze(1).repeat(1, self.num_replicates, 1)
             for _ in range(10):
-                ht_replicates = self.e_sindy(ht_replicates, dt=self.dt)
+                ht_replicates, coefficients = self.e_sindy(ht_replicates, dt=self.dt)
             h_out_replicates = h_out[1:, :].unsqueeze(1).repeat(1, self.num_replicates, 1)
             h_outs = h_out_replicates, ht_replicates
         return h_outs
@@ -135,9 +136,9 @@ def fit(model, train_dataset, valid_dataset, batch_size=64, num_epochs=4000, lr=
     for epoch in range(1, num_epochs + 1):
         for data in train_loader:
             model.train()
-            outputs, h_gru, h_sindy = model(data[0], sindy=True)
+            outputs, h_gru, h_sindy, coefficients = model(data[0], sindy=True)
             optimizer_everything.zero_grad()
-            loss = criterion(outputs, data[1]) + criterion(h_gru, h_sindy) * sindy_regularization + torch.abs(torch.mean(h_gru)) * 0.1
+            loss = criterion(outputs, data[1]) + criterion(h_gru, h_sindy) * sindy_regularization + torch.abs(torch.mean(h_gru)) * 0.1 
             loss.backward()
             optimizer_everything.step()
         print(epoch, ":", loss)
