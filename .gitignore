@@ -10,3 +10,4 @@ neuroenv/
 .ipynb_checkpoints/
 __pycache__/
 mice/data/
+zebrafish/data/
