@@ -15,7 +15,7 @@ All experiments for the *C. elegans*, mouse, and zebrafish can be reconstructed 
 - [Zebrafish](https://www.nature.com/articles/nmeth.2434) Download the `Neuronal activity in the forebrain` video located in the *Supplementary Information* section of the paper. Rename the movie to `forebrain.avi` and copy to `/neuralSHRED/zebra_fish/data`.
 
 
-Next steps of this project is to use *Sparse Identification of Non-Linear DYnamics* (SINDy) with SHRED to further study the latent space dynamics. With this in mind, the iPython notebooks in this repository preemptively utilize the SHRED model defined in the SINDy-SHRED folder. The only difference in the model architecture is that the original SHRED code has a Long short-term memory (LSTM) as the RNN whereas the SINDySHRED model includes a Gated Recurrent Unit (GRU). Model performance is comparable and either can be used. 
+Next steps of this project is to use *Sparse Identification of Non-Linear DYnamics* (SINDy) with SHRED to further study the latent space dynamics. With this in mind, the iPython notebooks in this repository preemptively utilize the SHRED model defined in the SINDy-SHRED folder. The only difference in the model architecture is that the original SHRED code has a Long short-term memory (LSTM) as the RNN whereas the SINDySHRED model includes a Gated Recurrent Unit (GRU). The SINDy regularization term in the loss function was set to zero in all experiments to ensure that the model is optimized solely for the SHRED weights. Model performance is comparable and either can be used. 
 
 To start, first install necessary dependencies by running the following in terminal: 
 ```bash
